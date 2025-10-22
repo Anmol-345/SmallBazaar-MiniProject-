@@ -111,7 +111,7 @@ SmallBazaar/
    ```bash
    npm run dev
    ```
-   App store runs on **http://localhost:3000**
+   App store runs on **http://localhost:9000**
 
 ---
 
@@ -129,7 +129,7 @@ SmallBazaar/
    ```bash
    npm run dev
    ```
-   App admin runs on **http://localhost:9000**
+   App admin runs on **http://localhost:3000**
 
 ---
 
