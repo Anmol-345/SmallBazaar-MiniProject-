@@ -27,7 +27,48 @@ con.connect(function(err) {
 //Switching to main database
 con.query("USE inventory");
 
+// Health check route (server.js or index.js)
+app.get('/health', async (req, res) => {
+  try {
+    res.status(200).json({
+      status: 'ok',
+      message: 'Server is healthy and running 🚀',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    res.status(500).json({
+      status: 'error',
+      message: 'Server health check failed ❌',
+      error: error.message,
+    });
+  }
+});
+
+
+
 //Product Routes
+
+app.post("/products/add", (req, res) => {
+    const { name, description, price, status, stock } = req.body;
+  
+    if (!name || !description || !price || stock === undefined) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+  
+    const sql =
+      "INSERT INTO products (name, description, price, status, stock) VALUES (?, ?, ?, ?, ?)";
+    const values = [name, description, price, status || "Active", stock];
+  
+    con.query(sql, values, (err, result) => {
+      if (err) {
+        console.error("❌ Error inserting product:", err);
+        return res.status(500).json({ message: "Database error." });
+      }
+      res.status(201).json({ message: "Product added successfully!" });
+    });
+  });
+  
 
 app.get("/products/all",(req,res)=>{
     query = "SELECT * FROM products;"
