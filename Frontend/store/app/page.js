@@ -121,7 +121,9 @@ export default function Home() {
               <div className="flex-grow-1">
                 <strong>{item.product_name}</strong>
                 <div className="d-flex align-items-center mt-1">
-                  <span className="me-2 text-secondary">${item.unit_price}</span>
+                  <span className="me-2 text-secondary">
+                    ${item.unit_price}
+                  </span>
                   <input
                     type="number"
                     min="1"
@@ -151,7 +153,8 @@ export default function Home() {
       {cart.length > 0 && (
         <div className="d-flex justify-content-between align-items-center border-top pt-3">
           <strong className="fs-5">
-            Total: ${cart.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
+            Total: $
+            {cart.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
           </strong>
           <button
             className="btn btn-primary rounded-pill px-4"
@@ -170,8 +173,7 @@ export default function Home() {
       <nav
         className="navbar navbar-expand-lg navbar-dark shadow-sm"
         style={{
-          background:
-            "linear-gradient(90deg, #0d6efd 0%, #6610f2 100%)",
+          background: "linear-gradient(90deg, #0d6efd 0%, #6610f2 100%)",
         }}
       >
         <div className="container-fluid">
@@ -285,9 +287,7 @@ export default function Home() {
                       checked={paymentMode === "Cod"}
                       onChange={() => setPaymentMode("Cod")}
                     />
-                    <label className="form-check-label">
-                      Cash on Delivery
-                    </label>
+                    <label className="form-check-label">Cash on Delivery</label>
                   </div>
                 </div>
                 <div className="modal-footer border-0">
@@ -299,6 +299,11 @@ export default function Home() {
                   </button>
                   <button
                     className="btn btn-success rounded-pill px-4"
+                    disabled={
+                      !customerName.trim() ||
+                      !customerAddress.trim() ||
+                      !customerContact.trim()
+                    }
                     onClick={() => {
                       closePayment();
                       setCart([]);
@@ -322,8 +327,7 @@ export default function Home() {
       <div
         className="container-fluid text-center text-white py-5"
         style={{
-          background:
-            "linear-gradient(120deg, #007bff 0%, #6610f2 100%)",
+          background: "linear-gradient(120deg, #007bff 0%, #6610f2 100%)",
         }}
       >
         <h1 className="fw-bold">Welcome to SmallBazaar 🛒</h1>
@@ -362,9 +366,7 @@ export default function Home() {
                     alt={product.name}
                   />
                   <div className="card-body">
-                    <h5 className="card-title fw-semibold">
-                      {product.name}
-                    </h5>
+                    <h5 className="card-title fw-semibold">{product.name}</h5>
                     <p className="card-text text-muted small">
                       {product.description}
                     </p>
@@ -374,18 +376,14 @@ export default function Home() {
                     <div className="d-flex align-items-center mb-3">
                       <button
                         className="btn btn-outline-secondary btn-sm rounded-circle"
-                        onClick={() =>
-                          handleQtyChange(product.id, qty - 1)
-                        }
+                        onClick={() => handleQtyChange(product.id, qty - 1)}
                       >
                         −
                       </button>
                       <span className="mx-3 fw-semibold">{qty}</span>
                       <button
                         className="btn btn-outline-secondary btn-sm rounded-circle"
-                        onClick={() =>
-                          handleQtyChange(product.id, qty + 1)
-                        }
+                        onClick={() => handleQtyChange(product.id, qty + 1)}
                       >
                         +
                       </button>
@@ -406,7 +404,9 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-dark text-light py-3 text-center mt-auto">
-        <small>© {new Date().getFullYear()} SmallBazaar — All Rights Reserved</small>
+        <small>
+          © {new Date().getFullYear()} SmallBazaar — All Rights Reserved
+        </small>
       </footer>
     </>
   );
