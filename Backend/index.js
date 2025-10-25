@@ -2,16 +2,19 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const mysql = require("mysql2");
+const url = require("url");
 
 dotenv.config();
+
 const app = express();
 app.use(express.json());
 
+// ✅ CORS setup
 const allowedOrigins = [
   "http://localhost:3000",
-  "http://localhost:9000", // if you use this locally
+  "http://localhost:9000",
   "https://small-bazaar-mini-project-wskh.vercel.app", // main frontend
-  "https://small-bazaar-mini-project-4vja.vercel.app"   // admin frontend
+  "https://small-bazaar-mini-project-4vja.vercel.app",  // admin frontend
 ];
 
 app.use(
@@ -19,8 +22,7 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true); // server-to-server requests
       if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = "The CORS policy for this site does not allow access from the specified Origin.";
-        return callback(new Error(msg), false);
+        return callback(new Error("CORS policy blocked this origin."), false);
       }
       return callback(null, true);
     },
@@ -28,192 +30,150 @@ app.use(
   })
 );
 
-
-// ✅ Parse DATABASE_URL
+// ✅ Parse and connect to Railway MySQL
 const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) {
-  console.error("❌ DATABASE_URL not found in environment variables");
+  console.error("❌ DATABASE_URL not found in .env");
   process.exit(1);
 }
 
-const parsed = new URL(dbUrl);
+const params = url.parse(dbUrl);
+const [user, password] = params.auth.split(":");
 
-// ✅ MySQL Pool
-const pool = mysql.createPool({
-  host: parsed.hostname,
-  user: parsed.username,
-  password: parsed.password,
-  database: parsed.pathname.replace("/", ""),
-  port: parsed.port,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const con = mysql.createConnection({
+  host: params.hostname,
+  user,
+  password,
+  database: params.pathname.replace("/", ""),
+  port: params.port,
 });
 
-// Helper to query using pool
-const query = (sql, params) =>
-  new Promise((resolve, reject) => {
-    pool.query(sql, params, (err, results) => {
-      if (err) reject(err);
-      else resolve(results);
-    });
-  });
+con.connect((err) => {
+  if (err) {
+    console.error("❌ Database connection failed:", err);
+  } else {
+    console.log("✅ Connected to MySQL on Railway!");
+  }
+});
 
 // 🩺 Health Check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "Server is running 🚀" });
+  res.json({ status: "ok", message: "Server is running fine 🚀" });
 });
 
 // 🧠 Test DB
-app.get("/test-db", async (req, res) => {
-  try {
-    const result = await query("SELECT NOW() AS time");
+app.get("/test-db", (req, res) => {
+  con.query("SELECT NOW() AS time", (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err });
     res.json({ success: true, result });
-  } catch (err) {
-    console.error("❌ DB test failed:", err);
-    res.status(500).json({ success: false, error: err });
-  }
+  });
 });
 
-// 🚀 Execute arbitrary query (optional, be careful)
-app.post("/execute-query", async (req, res) => {
-  const { query: sql } = req.body;
-  if (!sql) return res.status(400).json({ message: "Query is required" });
+// Execute arbitrary SQL query (use carefully)
+app.post("/execute-query", (req, res) => {
+  const { query } = req.body;
+  if (!query) return res.status(400).json({ message: "Query is required" });
 
   const forbidden = ["DROP", "DELETE", "TRUNCATE", "ALTER"];
   for (let cmd of forbidden) {
-    if (sql.toUpperCase().includes(cmd))
+    if (query.toUpperCase().includes(cmd)) {
       return res.status(403).json({ message: `Forbidden command detected: ${cmd}` });
+    }
   }
 
-  try {
-    const result = await query(sql);
+  con.query(query, (err, result) => {
+    if (err) return res.status(500).json({ message: "Query execution failed", error: err });
     res.json({ success: true, result });
-  } catch (err) {
-    console.error("Query execution error:", err);
-    res.status(500).json({ message: "Query failed", error: err });
-  }
+  });
 });
 
 // 🛍️ Product Routes
-app.post("/products/add", async (req, res) => {
-  const { name, description, price, status = "Active", stock } = req.body;
-  if (!name || !description || price === undefined || stock === undefined)
+app.post("/products/add", (req, res) => {
+  const { name, description, price, status, stock } = req.body;
+  if (!name || !description || !price || stock === undefined) {
     return res.status(400).json({ message: "All fields are required." });
-
-  try {
-    const result = await query(
-      "INSERT INTO products (name, description, price, status, stock) VALUES (?, ?, ?, ?, ?)",
-      [name, description, price, status, stock]
-    );
-    res.status(201).json({ message: "✅ Product added", id: result.insertId });
-  } catch (err) {
-    console.error("❌ Error adding product:", err);
-    res.status(500).json({ message: "Database error", error: err });
   }
+
+  const sql = "INSERT INTO products (name, description, price, status, stock) VALUES (?, ?, ?, ?, ?)";
+  con.query(sql, [name, description, price, status || "Active", stock], (err, result) => {
+    if (err) return res.status(500).json({ message: "Database error.", error: err });
+    res.status(201).json({ message: "✅ Product added successfully!", id: result.insertId });
+  });
 });
 
-app.get("/products/all", async (req, res) => {
-  try {
-    const results = await query("SELECT * FROM products");
-    res.json(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database error", error: err });
-  }
+app.get("/products/all", (req, res) => {
+  con.query("SELECT * FROM products;", (err, result) => {
+    if (err) return res.status(500).json({ message: "Database error.", error: err });
+    res.json(result);
+  });
 });
 
-app.put("/products/status", async (req, res) => {
+app.put("/products/status", (req, res) => {
   const { id } = req.body;
-  if (!id) return res.status(400).json({ message: "Product ID required" });
+  if (!id) return res.status(400).json({ message: "Product ID required." });
 
-  try {
-    await query(
-      `UPDATE products
-       SET status = CASE WHEN status='active' THEN 'inactive' ELSE 'active' END
-       WHERE id=?`,
-      [id]
-    );
+  const query = `
+    UPDATE products
+    SET status = CASE WHEN status = 'active' THEN 'inactive' ELSE 'active' END
+    WHERE id = ?;
+  `;
+  con.query(query, [id], (err) => {
+    if (err) return res.status(500).json({ message: "Database error.", error: err });
     res.json({ message: "Product status toggled", productId: id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database error", error: err });
-  }
+  });
 });
 
-app.put("/products/update", async (req, res) => {
-  const { id, price, stock } = req.body;
-  if (!id) return res.status(400).json({ message: "Product ID required" });
+app.put("/products/update", (req, res) => {
+  const { id, stock, price } = req.body;
+  if (!id) return res.status(400).json({ message: "Product ID required." });
 
-  try {
-    await query(
-      `UPDATE products SET price=?, stock=? WHERE id=?`,
-      [price, stock, id]
-    );
+  const query = "UPDATE products SET price = ?, stock = ? WHERE id = ?;";
+  con.query(query, [price, stock, id], (err) => {
+    if (err) return res.status(500).json({ message: "Database error.", error: err });
     res.json({ message: "Product updated", productId: id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database error", error: err });
-  }
+  });
 });
 
-// 🧾 Order Routes
-app.get("/orders/all", async (req, res) => {
-  try {
-    const results = await query("SELECT * FROM orders");
-    res.json(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database error", error: err });
-  }
+// 🧾 Orders Routes
+app.get("/orders/all", (req, res) => {
+  con.query("SELECT * FROM orders;", (err, result) => {
+    if (err) return res.status(500).json({ message: "Database error.", error: err });
+    res.json(result);
+  });
 });
 
-app.post("/orders/place", async (req, res) => {
-  const {
-    items,
-    customer_name,
-    customer_address,
-    customer_contact,
-    modeOfPayment,
-    status,
-    total_amount,
-  } = req.body;
+app.post("/orders/place", (req, res) => {
+  const { items, customer_name, customer_address, customer_contact, modeOfPayment, status, total_amount } = req.body;
+  if (!items || !customer_name) return res.status(400).json({ message: "Missing required fields." });
 
-  if (!items || !customer_name)
-    return res.status(400).json({ message: "Missing required fields." });
-
-  try {
-    const result = await query(
-      `INSERT INTO orders 
-       (items, customer_name, customer_address, customer_contact, modeOfPayment, status, total_amount)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [items, customer_name, customer_address, customer_contact, modeOfPayment, status, total_amount]
-    );
-    res.json({ message: "✅ Order added", orderId: result.insertId });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to place order", error: err });
-  }
+  const query = `
+    INSERT INTO orders 
+    (items, customer_name, customer_address, customer_contact, modeOfPayment, status, total_amount)
+    VALUES (?, ?, ?, ?, ?, ?, ?);
+  `;
+  con.query(query, [items, customer_name, customer_address, customer_contact, modeOfPayment, status, total_amount], (err, result) => {
+    if (err) return res.status(500).json({ message: "Failed to place order", error: err });
+    res.json({ message: "✅ Order placed", orderId: result.insertId, order: req.body });
+  });
 });
 
-app.put("/orders/update", async (req, res) => {
+app.put("/orders/update", (req, res) => {
   const { id } = req.body;
-  if (!id) return res.status(400).json({ message: "Order ID required" });
+  if (!id) return res.status(400).json({ message: "Order ID required." });
 
-  try {
-    await query(
-      `UPDATE orders
-       SET status = CASE WHEN status='InProcess' THEN 'Delivered' ELSE 'InProcess' END
-       WHERE id=?`,
-      [id]
-    );
+  const query = `
+    UPDATE orders
+    SET status = CASE WHEN status = 'InProcess' THEN 'Delivered' ELSE 'InProcess' END
+    WHERE id = ?;
+  `;
+  con.query(query, [id], (err) => {
+    if (err) return res.status(500).json({ message: "Database error.", error: err });
     res.json({ message: "Order status toggled", orderId: id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database error", error: err });
-  }
+  });
 });
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
