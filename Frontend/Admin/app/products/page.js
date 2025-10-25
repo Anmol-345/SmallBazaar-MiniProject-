@@ -27,7 +27,7 @@ export default function Products() {
 
   const mutate = async ()=>{
     try {
-        const response = await axios.get("http://localhost:5000/products/all");
+        const response = await axios.get("https://small-bazaar-mini-project.vercel.app/products/all");
         setProducts(response.data)
         console.log(response.data)
       } catch (error) {
@@ -39,7 +39,7 @@ export default function Products() {
 
   const toggleStatus = async (id)=>{
     try {
-        const response = await axios.put(`http://localhost:5000/products/status`,{id:id});
+        const response = await axios.put(`https://small-bazaar-mini-project.vercel.app/products/status`,{id:id});
         mutate()
       } catch (error) {
         console.error("Error toggling status:", error);
