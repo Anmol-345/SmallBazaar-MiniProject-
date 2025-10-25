@@ -10,7 +10,7 @@ app.use(express.json());
 // ✅ CORS setup
 app.use(
   cors({
-    origin: ["http://localhost:9000", "http://localhost:3000"],
+    origin: ["https://small-bazaar-mini-project-4vja.vercel.app/", "https://small-bazaar-mini-project-wskh.vercel.app/"],
     credentials: true,
   })
 );
