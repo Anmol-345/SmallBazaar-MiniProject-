@@ -42,7 +42,7 @@ export default function EditProductDialog({ product, onUpdate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put("http://localhost:5000/products/update", {
+      await axios.put("https://small-bazaar-mini-project.vercel.app/products/update", {
         id: product.id,
         ...formData,
       });
