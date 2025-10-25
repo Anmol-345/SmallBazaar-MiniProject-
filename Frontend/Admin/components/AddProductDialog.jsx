@@ -30,7 +30,7 @@ export default function AddProductDialog({ onAdded }) {
     }
 
     try {
-      await axios.post("http://localhost:5000/products/add", {
+      await axios.post("https://small-bazaar-mini-project.vercel.app/products/add", {
         name: form.name.trim(),
         description: form.description.trim(),
         price: parseFloat(form.price),
