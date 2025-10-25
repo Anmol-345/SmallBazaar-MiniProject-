@@ -23,7 +23,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/orders/all")
+      const res = await axios.get("https://small-bazaar-mini-project.vercel.app/orders/all")
       // Parse items JSON only if it's a string
       const parsedOrders = res.data.map(order => ({
         ...order,
@@ -39,7 +39,7 @@ export default function OrdersPage() {
   // Toggle status function
   const toggleStatus = async (id) => {
     try {
-      await axios.put("http://localhost:5000/orders/update", { id })
+      await axios.put("https://small-bazaar-mini-project.vercel.app/orders/update", { id })
       fetchOrders() // refresh after update
     } catch (err) {
       console.error("Error toggling status:", err)
