@@ -33,7 +33,7 @@ export default function Home() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/products/all");
+      const res = await axios.get("https://small-bazaar-mini-project.vercel.app/products/all");
       setProducts(res.data);
       setActiveProducts(res.data.filter((p) => p.status === "Active"));
     } catch (err) {
@@ -92,7 +92,7 @@ export default function Home() {
     };
 
     axios
-      .post("http://localhost:5000/orders/place", order)
+      .post("https://small-bazaar-mini-project.vercel.app/orders/place", order)
       .then(() => {
         alert("Order placed successfully!");
       })
