@@ -66,7 +66,7 @@ export default function Component() {
         {/* Right side */}
         <div className="flex items-center gap-2">
           <Button asChild size="sm" className="text-sm">
-            <a href="http://localhost:3000/" target="_blank">Visit Store</a>
+            <a href="https://small-bazaar-mini-project-wskh.vercel.app/" target="_blank">Visit Store</a>
           </Button>
         </div>
       </div>
