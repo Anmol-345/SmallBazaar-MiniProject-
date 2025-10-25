@@ -35,7 +35,7 @@ export default function SalesPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/orders/all")
+      const res = await axios.get("https://small-bazaar-mini-project.vercel.app/orders/all")
       const parsed = res.data.map(order => ({
         ...order,
         items: typeof order.items === "string" ? JSON.parse(order.items) : order.items
