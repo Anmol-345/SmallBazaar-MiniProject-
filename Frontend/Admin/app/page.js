@@ -38,8 +38,15 @@ export default function SalesPage() {
       const res = await axios.get("https://small-bazaar-mini-project.vercel.app/orders/all")
       const parsed = res.data.map(order => ({
         ...order,
-        items: typeof order.items === "string" ? JSON.parse(order.items) : order.items
+        items: typeof order.items === "string" ? JSON.parse(order.items) : order.items,
+        total_amount: Number(order.total_amount) || 0,
       }))
+      // Ensure each item.amount is a number
+      parsed.forEach(order => {
+        order.items.forEach(item => {
+          item.amount = Number(item.amount) || 0
+        })
+      })
       setOrders(parsed)
     } catch (err) {
       console.error(err)
@@ -53,14 +60,14 @@ export default function SalesPage() {
     )
   })
 
-  const totalSales = filteredOrders.reduce((sum, order) => sum + order.total_amount, 0)
+  const totalSales = filteredOrders.reduce((sum, order) => sum + Number(order.total_amount), 0)
   const totalOrders = filteredOrders.length
 
   const productSales = {}
   filteredOrders.forEach(order => {
     order.items.forEach(item => {
       if (!productSales[item.product_name]) productSales[item.product_name] = 0
-      productSales[item.product_name] += item.amount
+      productSales[item.product_name] += Number(item.amount)
     })
   })
 
@@ -77,7 +84,7 @@ export default function SalesPage() {
             </div>
             <div className="bg-card p-4 rounded-lg shadow flex-1">
               <h3 className="text-sm font-medium text-muted-foreground">Total Sales</h3>
-              <p className="text-xl font-bold">₹{totalSales}</p>
+              <p className="text-xl font-bold">₹{totalSales.toFixed(2)}</p>
             </div>
           </div>
 
@@ -138,7 +145,7 @@ export default function SalesPage() {
                 {Object.entries(productSales).map(([product, amount]) => (
                   <TableRow key={product}>
                     <TableCell>{product}</TableCell>
-                    <TableCell>₹{amount}</TableCell>
+                    <TableCell>₹{amount.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -168,7 +175,7 @@ export default function SalesPage() {
                     <TableCell>
                       <OrderDetails order={order} />
                     </TableCell>
-                    <TableCell>₹{order.total_amount}</TableCell>
+                    <TableCell>₹{Number(order.total_amount).toFixed(2)}</TableCell>
                     <TableCell>{order.status}</TableCell>
                     <TableCell>{order.modeOfPayment}</TableCell>
                     <TableCell>{new Date(order.ordered_at).toLocaleString()}</TableCell>
